@@ -390,10 +390,39 @@ class TrayApp:
         self.log_window.Show()
         self.log_window.Raise()
 
+    def reload_services(self):
+        # Stop API thread
+        if self.api_thread and self.api_thread.is_alive():
+            logging.info("Stopping API thread...")
+            self.api_thread.stop()
+            self.api_thread.join(timeout=5)
+
+        # Reset COM
+        if self._pythoncom_initialized:
+            try:
+                pythoncom.CoUninitialize()
+            except Exception:
+                logging.exception("Error during COM uninit")
+            self._pythoncom_initialized = False
+
+        # Reset driver references
+        self.digital_scales_com_object = None
+        self.digital_scales_driver = None
+        self.digital_scales_executor = None
+
+        # Reinitialize everything
+        self.start_scales_device_driver()
+
+        logging.info("Services reloaded successfully")
+
     def show_settings(self):
         dlg = SetupDialog(self.app_service.settings)
-        dlg.ShowModal()
+        result = dlg.ShowModal()
         dlg.Destroy()
+
+        if result == 5101: # OK in our case "Save Configuration" button
+            logging.info("Settings updated, reloading services...")
+            self.reload_services()
 
     def generate_api_key(self):
         key = self.app_service.generate_api_key()
@@ -403,6 +432,37 @@ class TrayApp:
 
     def run(self):
         self.app.MainLoop()
+
+    def exit_app(self):
+        logging.info("Shutting down application...")
+
+        # Stop API server
+        if hasattr(self, "api_thread") and self.api_thread:
+            try:
+                self.api_thread.stop()
+                self.api_thread.join(timeout=5)
+            except Exception:
+                logging.exception("Error stopping API thread")
+
+        # Uninitialize COM
+        if self._pythoncom_initialized:
+            try:
+                pythoncom.CoUninitialize()
+            except Exception:
+                logging.exception("Error during COM uninitialization")
+            self._pythoncom_initialized = False
+
+        # Remove tray icon (IMPORTANT on Windows)
+        if hasattr(self, "tray_icon") and self.tray_icon:
+            self.tray_icon.RemoveIcon()
+            self.tray_icon.Destroy()
+
+        # Close log window if open
+        if self.log_window:
+            self.log_window.Destroy()
+
+        # Exit wx main loop
+        wx.CallAfter(self.app.ExitMainLoop)
 
 
 if __name__ == "__main__":
