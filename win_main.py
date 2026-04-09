@@ -107,7 +107,7 @@ class APIServerThread(threading.Thread):
 
 # 🔹 Log window and emitter for wxPython
 class LogWindow(wx.Frame):
-    def __init__(self, parent=None, title="Fiscal Service Logs"):
+    def __init__(self, parent=None, title="Digital scales service Logs"):
         super().__init__(parent, title=title, size=(800, 400))
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -161,7 +161,7 @@ class MyTaskBarIcon(wx.adv.TaskBarIcon):
         super().__init__()
         self.app = app
         icon = wx.Icon(resource_path("icon.ico"), wx.BITMAP_TYPE_ICO)
-        self.SetIcon(icon, "ODOO Fiscal Service Integration")
+        self.SetIcon(icon, "Digital scales service")
         self.Bind(wx.adv.EVT_TASKBAR_LEFT_DCLICK, self.on_show_logs)
 
 
