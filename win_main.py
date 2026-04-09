@@ -114,9 +114,21 @@ class LogWindow(wx.Frame):
         self.text_ctrl = wx.TextCtrl(panel, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
         sizer.Add(self.text_ctrl, 1, wx.EXPAND | wx.ALL, 5)
         panel.SetSizer(sizer)
+        self._allow_destroy = False
+        self.Bind(wx.EVT_CLOSE, self._on_close)
 
     def append_log(self, message):
         wx.CallAfter(self.text_ctrl.AppendText, message + "\n")
+
+    def _on_close(self, event):
+        if self._allow_destroy:
+            event.Skip()
+        else:
+            self.Hide()
+            event.Veto()
+
+    def mark_for_destruction(self):
+        self._allow_destroy = True
 
 
 class LogEmitter(logging.Handler):
@@ -459,6 +471,7 @@ class TrayApp:
 
         # Close log window if open
         if self.log_window:
+            self.log_window.mark_for_destruction()
             self.log_window.Destroy()
 
         # Exit wx main loop
