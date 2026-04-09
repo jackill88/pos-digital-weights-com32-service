@@ -85,6 +85,7 @@ PROPERTY_NAMES = {
     "piece_prefix": ("ШтучныйПрефиксШК", "PieceBarcodePrefix"),
     "price_include_vat": ("ЦенаВключаетПДВ", "PriceIncludesVAT"),
     "plu_block_result": ("РезультатПЛУ", "PLUResult"),
+    "connected": ("Connected",),
 }
 
 METHOD_NAMES = {
@@ -197,6 +198,9 @@ class ShtrihPtintLanComDriver:
 
         self._call_method("beep")
 
+        _connected = self._get_property("connected")
+        if not _connected:
+            raise DigitalScalesDriverError("Driver is initialized but the device is not connected.")
 
         return {"status": "ok", "device_id": self._device_id}
 
@@ -254,18 +258,15 @@ class ShtrihPtintLanComDriver:
         return {"status": "ok"}
 
     def get_version(self) -> dict:
-        try:
-            version_st = self._get_property("version_file_st", default="0")
-            version_ml = self._get_property("version_file_ml", default="0")
-        except DigitalScalesDriverError:
-            version_st = version_ml = "0"
+
+        self._activate_and_connect()
 
         try:
-            driver_version = f"{int(version_st)}.{int(version_ml)}"
+            driver_version = self._get_property("version_ke", default=0)
         except (ValueError, TypeError):
-            driver_version = f"{version_st}.{version_ml}"
+            driver_version = "Unknown"
 
-        return {"status": "ok", "version": driver_version}
+        return {"status": "ok", "driver_version": driver_version}
 
     def _prepare_names(self, item: DigitalScaleItem) -> tuple[str, str]:
         value = (item.full_name or item.name or "").strip()
