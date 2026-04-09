@@ -86,6 +86,7 @@ PROPERTY_NAMES = {
     "price_include_vat": ("ЦенаВключаетПДВ", "PriceIncludesVAT"),
     "plu_block_result": ("РезультатПЛУ", "PLUResult"),
     "connected": ("Connected",),
+    "result_code_description": ("ResultCodeDescription",),
 }
 
 METHOD_NAMES = {
@@ -333,8 +334,12 @@ class ShtrihPtintLanComDriver:
         except DigitalScalesDriverError:
             pass
 
-        if int(self._call_method("clear_goods") or 0) != 0:
-            raise DigitalScalesDriverError("Unable to clear goods database before upload.")
+        _result_code = int(self._call_method("clear_goods") or 0)
+        if _result_code != 0:
+            _result_code_desc = self._get_property("result_code_description", default = "uknown")
+            _err_msg = f"Unable to clear goods database before upload. Error code {_result_code} ({_result_code_desc}) - please check with the driver manual"
+            logger.error(_err_msg)
+            raise DigitalScalesDriverError(_err_msg)
 
         self._set_property("fast_load", 1 if self._config.fast_load else 0)
         try:
